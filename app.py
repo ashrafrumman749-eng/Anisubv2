@@ -394,9 +394,14 @@ def process_task(task_id, data):
                     continue
                 if shutil.which('yt-dlp'):
                     log(f"yt-dlp trying {label}...", "⬇️")
-                    cmd = ['yt-dlp', '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]',
+                    cmd = ['yt-dlp',
+                           '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best',
                            '--merge-output-format', 'mp4',
-                           '-o', raw_video_path, '--no-playlist']
+                           '--no-playlist',
+                           '--no-check-certificate',
+                           '--add-header', f'Referer:{attempt_url}',
+                           '--add-header', 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                           '-o', raw_video_path]
                     if cookie_path:
                         cmd += ['--cookies', cookie_path]
                     cmd.append(attempt_url)
@@ -431,33 +436,47 @@ def process_task(task_id, data):
                     task['progress'] = 25
                     log("Downloaded via FFmpeg", "✅")
 
-            # Embed page থেকে m3u8 extract করে try
+            # Embed page থেকে real URL বের করে try
             if not downloaded and (iframe_url or video_url):
                 log("Trying embed page extraction...", "🔍")
                 embed = iframe_url or video_url
                 try:
                     result = extract_from_episode_page(embed, cookie_path)
                     real_url = result.get('m3u8_url')
-                    if real_url and shutil.which('yt-dlp'):
-                        log(f"Found real URL: {real_url[:60]}...", "✅")
-                        cmd = ['yt-dlp', '-f', 'best', '-o', raw_video_path, '--no-playlist', real_url]
+                    if real_url:
+                        log(f"Found real m3u8: {real_url[:60]}...", "✅")
+                        # FFmpeg দিয়ে সরাসরি m3u8 download
+                        cmd = ['ffmpeg', '-y',
+                               '-user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                               '-headers', f'Referer: {embed}',
+                               '-i', real_url, '-c', 'copy', raw_video_path]
+                        proc = subprocess.Popen(cmd, stderr=subprocess.PIPE, text=True)
+                        for line in iter(proc.stderr.readline, ''):
+                            l = line.strip()
+                            if l:
+                                task['logs'].append(f"[FFMPEG-DL2] {l}")
+                        proc.wait()
+                        if os.path.exists(raw_video_path) and os.path.getsize(raw_video_path) > 1024 * 1024:
+                            downloaded = True
+                            log("Downloaded via embed m3u8!", "✅")
+
+                    # Real URL না পেলে yt-dlp দিয়ে embed try
+                    if not downloaded and shutil.which('yt-dlp'):
+                        log("yt-dlp trying embed directly...", "⬇️")
+                        cmd = ['yt-dlp', '-f', 'best',
+                               '--no-playlist', '--no-check-certificate',
+                               '--add-header', f'Referer:{embed}',
+                               '--add-header', 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+                               '-o', raw_video_path, embed]
                         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
                         for line in iter(proc.stdout.readline, ''):
                             l = line.strip()
                             if l:
-                                task['logs'].append(f"[YT-DLP2] {l}")
+                                task['logs'].append(f"[YT-DLP3] {l}")
                         proc.wait()
                         if os.path.exists(raw_video_path) and os.path.getsize(raw_video_path) > 1024 * 1024:
                             downloaded = True
-                            log("Downloaded via embed extraction!", "✅")
-                    elif real_url:
-                        # yt-dlp নেই, FFmpeg দিয়ে try
-                        cmd = ['ffmpeg', '-y', '-user_agent', 'Mozilla/5.0', '-i', real_url, '-c', 'copy', raw_video_path]
-                        proc = subprocess.Popen(cmd, stderr=subprocess.PIPE, text=True)
-                        proc.wait()
-                        if os.path.exists(raw_video_path) and os.path.getsize(raw_video_path) > 1024 * 1024:
-                            downloaded = True
-                            log("Downloaded via embed+FFmpeg!", "✅")
+                            log("Downloaded via yt-dlp embed!", "✅")
                 except Exception as ex:
                     log(f"Embed extraction failed: {ex}", "⚠️")
 
