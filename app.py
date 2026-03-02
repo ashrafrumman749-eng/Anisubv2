@@ -417,7 +417,17 @@ def process_task(task_id, data):
                 log("ASS converted (manual)", "✅")
             else:
                 log("ASS converted via FFmpeg", "✅")
-
+try:
+                    import re as _re
+                    with open(ass_file_path, 'r', encoding='utf-8') as f:
+                        ac = f.read()
+                    ac = _re.sub(r'Style: Default,[^\n]+',
+                        'Style: Default,Noto Sans Bengali,28,&H00FFFFFF,&H000000FF,&H00000000,&H64000000,0,0,0,0,100,100,0,0,3,0,0,2,20,20,25,1', ac)
+                    with open(ass_file_path, 'w', encoding='utf-8') as f:
+                        f.write(ac)
+                    log("Netflix style applied ✨", "✅")
+                except Exception as se:
+                    log(f"Style failed: {se}", "⚠️")
             # scale=1280:-2 for speed + ass filter for Bengali
             sub_filter = f"scale=1280:-2,ass='{ass_file_path}':fontsdir=/tmp/fonts/"
 
