@@ -111,7 +111,9 @@ tasks = {}
 @app.route('/')
 def index():
     return render_template('index.html')
-
+@app.route('/bookmarklet')
+def bookmarklet():
+    return render_template('bookmarklet.html')
 
 # Support both /extract and /api/extract
 @app.route('/extract', methods=['POST'])
@@ -128,9 +130,6 @@ def extract():
     result['subtitle'] = result['subtitles'][0]['url'] if result.get('subtitles') else None
     return jsonify(result)
 
-@app.route('/bookmarklet')
-def bookmarklet():
-    return render_template('bookmarklet.html')
 @app.route('/upload_sub', methods=['POST'])
 def upload_sub():
     if 'file' not in request.files:
