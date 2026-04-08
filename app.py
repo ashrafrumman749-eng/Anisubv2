@@ -344,10 +344,97 @@ def process_task(task_id, data):
             log(task, 'ASS subtitle prepared', '🎨')
 
         # ── Download video using N_m3u8DL-RE (with referer) ─────
-        raw_video = str(work_dir / 'source.mp4')
-        task['stage'] = 'download'
-        task['progress'] = 40
-        log(task, 'Downloading video...', '⬇️')
+        # ── Download video using N_m3u8DL-RE (with referer) ─────
+raw_video = str(work_dir / 'source.mp4')
+task['stage'] = 'download'
+task['progress'] = 40
+log(task, 'Downloading video...', '⬇️')
+
+# N_m3u8DL-RE পাথ ঠিক করা
+n_m3u8dl_re_path = shutil.which('N_m3u8DL-RE')
+if not n_m3u8dl_re_path:
+    # লোকাল পাথে চেক
+    for p in ['./N_m3u8DL-RE', '/usr/local/bin/N_m3u8DL-RE']:
+        if os.path.exists(p):
+            n_m3u8dl_re_path = p
+            break
+
+referer = data.get('source_url') or video_url
+
+if n_m3u8dl_re_path:
+    cmd = [
+        n_m3u8dl_re_path, video_url,
+        '-sv', 'best',
+        '-mt',
+        '-M', 'format=mp4',
+        '-o', str(work_dir),
+        '-H', f'Referer:{referer}',
+        '-H', f'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    ]
+    log(task, f'Using N_m3u8DL-RE from {n_m3u8dl_re_path}', '📥')
+    proc = subprocess.run(cmd, capture_output=True, text=True)
+    if proc.returncode == 0:
+        downloaded_file = work_dir / 'source.mp4'
+        if downloaded_file.exists() and downloaded_file.stat().st_size > 1024:
+            raw_video = str(downloaded_file)
+            log(task, 'Video downloaded via N_m3u8DL-RE', '✅')
+        else:
+            raise RuntimeError('N_m3u8DL-RE output missing')
+    else:
+        log(task, f'N_m3u8DL-RE stderr: {proc.stderr[:200]}', '⚠️')
+        raise RuntimeError(f'N_m3u8DL-RE failed with code {proc.returncode}')
+else:
+    # Fallback: requests with FULL headers (including cookies)
+    log(task, 'N_m3u8DL-RE not found, using requests with retry...', '⚠️')
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Referer': referer,
+        'Origin': referer.split('/')[0] + '//' + referer.split('/')[2] if referer else '',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Connection': 'keep-alive'
+    }
+    session = requests.Session()
+    if cookie_path and os.path.exists(cookie_path):
+        try:
+            import http.cookiejar as cookielib
+            cj = cookielib.MozillaCookieJar(cookie_path)
+            cj.load()
+            session.cookies = cj
+            log(task, 'Cookies loaded', '🍪')
+        except Exception as e:
+            log(task, f'Cookie load failed: {e}', '⚠️')
+    
+    # রিট্রাই মেকানিজম
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            resp = session.get(video_url, headers=headers, stream=True, timeout=60)
+            resp.raise_for_status()
+            total = int(resp.headers.get('content-length', 0))
+            down = 0
+            with open(raw_video, 'wb') as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+                        down += len(chunk)
+                        if total:
+                            task['progress'] = 40 + int(35 * down / total)
+            if os.path.getsize(raw_video) > 1024:
+                log(task, 'Video downloaded via requests', '✅')
+                break
+            else:
+                raise Exception('File too small')
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403 and attempt < max_retries-1:
+                log(task, f'403 error, retrying with delay {attempt+1}...', '🔄')
+                time.sleep(2)
+            else:
+                raise
+        except Exception as e:
+            if attempt == max_retries-1:
+                raise
+            time.sleep(2)
 
         # Check if N_m3u8DL-RE binary exists (from railway predeploy)
         n_m3u8dl_re_path = Path('./N_m3u8DL-RE')
