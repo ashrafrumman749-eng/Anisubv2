@@ -27,44 +27,178 @@
         h2 { font-size: 1.2rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
         .badge { background: var(--success); color: #000; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; display: none; }
         .badge.active { display: inline-block; }
-        input, select, textarea { width: 100%; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: var(--text); border-radius: 6px; margin-bottom: 10px; font-family: inherit; }
-        button { background: linear-gradient(to right, var(--accent), var(--accent2)); color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-size: 1.1rem; transition: opacity 0.2s; }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid var(--glass-border);
+            color: var(--text);
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-family: inherit;
+        }
+        button {
+            background: linear-gradient(to right, var(--accent), var(--accent2));
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            font-size: 1.1rem;
+            transition: opacity 0.2s;
+        }
         button:hover { opacity: 0.9; }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .tabs { display: flex; gap: 10px; margin-bottom: 15px; }
-        .tab { flex: 1; padding: 10px; text-align: center; background: rgba(0,0,0,0.3); border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            border: 1px solid transparent;
+        }
         .tab.active { background: var(--glass); border-color: var(--accent); color: var(--accent3); }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
-        .dropzone { border: 2px dashed var(--glass-border); border-radius: 6px; padding: 30px; text-align: center; color: var(--text-muted); cursor: pointer; }
+        .dropzone {
+            border: 2px dashed var(--glass-border);
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
         .dropzone.dragover { border-color: var(--accent); background: rgba(108,99,255,0.1); }
-        .preview-box { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 6px; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        .preview-sub { position: absolute; width: 100%; text-align: center; padding: 20px; font-family: 'Noto Sans Bengali', 'Kalpurush', 'SolaimanLipi', sans-serif; transition: all 0.2s; z-index: 10; line-height: 1.2; word-wrap: break-word;}
+        .preview-box {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 6px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .preview-sub {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            padding: 20px;
+            font-family: 'Noto Sans Bengali', 'Noto Serif Bengali', 'Lohit Bengali', 'Kalpurush', 'SolaimanLipi', sans-serif;
+            transition: all 0.2s;
+            z-index: 10;
+            line-height: 1.2;
+            word-wrap: break-word;
+        }
         .steps { display: flex; justify-content: space-between; margin-bottom: 20px; }
         .step { text-align: center; flex: 1; color: var(--text-muted); font-size: 0.9rem; position: relative; }
         .step.active { color: var(--accent3); text-shadow: 0 0 10px var(--accent3); }
         .step.done { color: var(--success); }
         .step.error { color: var(--error); }
-        .progress-container { width: 100%; height: 20px; background: rgba(0,0,0,0.5); border-radius: 10px; overflow: hidden; position: relative; margin-bottom: 20px; }
+        .progress-container {
+            width: 100%;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            margin-bottom: 20px;
+        }
         .progress-bar { height: 100%; background: linear-gradient(to right, var(--accent), var(--accent3)); width: 0%; transition: none; }
-        .progress-text { position: absolute; width: 100%; text-align: center; top: 0; line-height: 20px; font-size: 0.8rem; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-        .log-box { height: 200px; background: #000; color: var(--success); font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 10px; border-radius: 6px; overflow-y: auto; }
+        .progress-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            top: 0;
+            line-height: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px #000;
+        }
+        .log-box {
+            height: 200px;
+            background: #000;
+            color: var(--success);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            padding: 10px;
+            border-radius: 6px;
+            overflow-y: auto;
+        }
         .log-line { margin-bottom: 4px; word-break: break-all; }
-        .mini-log { font-size: 0.8rem; color: var(--warn); text-align: center; margin-top: 5px; min-height: 16px; }
+        .mini-log {
+            font-size: 0.8rem;
+            color: var(--warn);
+            text-align: center;
+            margin-top: 5px;
+            min-height: 16px;
+        }
         .iframe-list { margin-top: 10px; display: none; }
-        .iframe-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 4px; margin-bottom: 5px; font-size: 0.8rem; }
+        .iframe-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            padding: 8px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            font-size: 0.8rem;
+        }
         .iframe-item button { width: auto; padding: 4px 8px; font-size: 0.8rem; }
-        .floating-tasks { position: fixed; bottom: 20px; right: 20px; background: var(--accent); padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 100; }
-        .task-panel { position: fixed; bottom: 70px; right: 20px; width: 300px; background: var(--bg); border: 1px solid var(--accent); border-radius: 12px; padding: 15px; display: none; z-index: 100; max-height: 400px; overflow-y: auto; }
+        .floating-tasks {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--accent);
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            z-index: 100;
+        }
+        .task-panel {
+            position: fixed;
+            bottom: 70px;
+            right: 20px;
+            width: 300px;
+            background: var(--bg);
+            border: 1px solid var(--accent);
+            border-radius: 12px;
+            padding: 15px;
+            display: none;
+            z-index: 100;
+            max-height: 400px;
+            overflow-y: auto;
+        }
         .task-row { background: var(--glass); padding: 10px; border-radius: 6px; margin-bottom: 10px; }
-        .task-row-title { font-size: 0.9rem; font-weight: bold; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .task-row-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         .task-row-progress { height: 6px; background: rgba(0,0,0,0.5); border-radius: 3px; margin-bottom: 5px; }
         .task-row-bar { height: 100%; background: var(--accent3); width: 0%; }
         .pulse { animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
         .hidden { display: none !important; }
-        .success-banner { background: rgba(0,230,118,0.1); border: 1px solid var(--success); padding: 15px; border-radius: 6px; text-align: center; margin-bottom: 20px; }
+        .success-banner {
+            background: rgba(0,230,118,0.1);
+            border: 1px solid var(--success);
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
         .success-banner a { color: var(--success); font-weight: bold; text-decoration: none; }
         .success-banner a:hover { text-decoration: underline; }
     </style>
@@ -72,13 +206,13 @@
 <body>
     <div class="container">
         <h1>🎬 AniSub Uploader</h1>
-        
+
         <div class="card" id="extraction-section">
             <h2>🔍 Auto Extract</h2>
             <input type="url" id="extract-url" placeholder="Paste episode page URL here...">
             <button id="extract-btn" onclick="startExtraction()">Auto Extract Video & Subtitles</button>
             <div class="mini-log" id="extract-log"></div>
-            
+
             <div class="iframe-list" id="iframe-list">
                 <div style="margin-bottom: 5px; font-weight: bold;">Found Iframes (<span id="iframe-count">0</span>):</div>
                 <div id="iframe-items"></div>
@@ -98,19 +232,19 @@
                 <div class="tab" onclick="switchTab('url')">Direct URL</div>
                 <div class="tab" onclick="switchTab('translate')">Translate</div>
             </div>
-            
+
             <div id="tab-file" class="tab-content active">
                 <div class="dropzone" id="sub-dropzone" onclick="document.getElementById('sub-file').click()">
-                    Drag & Drop .srt / .vtt here or Click to browse
+                    Drag & Drop .srt / .vtt / .ass here or Click to browse
                 </div>
-                <input type="file" id="sub-file" accept=".srt,.vtt" style="display:none" onchange="handleSubFile(this)">
+                <input type="file" id="sub-file" accept=".srt,.vtt,.ass" style="display:none" onchange="handleSubFile(this)">
                 <div class="mini-log" id="sub-file-name" style="color: var(--accent3)"></div>
             </div>
-            
+
             <div id="tab-url" class="tab-content">
-                <input type="url" id="sub-url" placeholder="Direct subtitle URL (.srt/.vtt)...">
+                <input type="url" id="sub-url" placeholder="Direct subtitle URL (.srt/.vtt/.ass)...">
             </div>
-            
+
             <div id="tab-translate" class="tab-content">
                 <div class="grid-2">
                     <select id="trans-engine" onchange="toggleGeminiKey()">
@@ -123,10 +257,10 @@
                         <option value="en">English</option>
                     </select>
                 </div>
-                <input type="text" id="gemini-key" placeholder="Gemini API Key" class="hidden" value="AIzaSyAD9UcxHD474DyKE5iYmrNKLh5xInOodLk">
+                <input type="text" id="gemini-key" placeholder="Gemini API Key" class="hidden">
                 <input type="url" id="trans-sub-url" placeholder="Source English Subtitle URL...">
                 <div style="text-align:center; margin: 10px 0; color: var(--text-muted)">OR</div>
-                <input type="file" id="trans-sub-file" accept=".srt,.vtt" onchange="handleTransSubFile(this)">
+                <input type="file" id="trans-sub-file" accept=".srt,.vtt,.ass" onchange="handleTransSubFile(this)">
                 <div class="mini-log" id="trans-sub-file-name" style="color: var(--accent3)"></div>
             </div>
         </div>
@@ -135,39 +269,45 @@
             <h2>⚙️ Subtitle Settings</h2>
             <div class="grid-2">
                 <select id="set-font" onchange="updatePreview()">
-    <option value="noto_sans_bn">Noto Sans Bengali</option>
-    <option value="kalpurush">Kalpurush</option>
-    <option value="solaimanlipi">SolaimanLipi</option>
-    <option value="noto_serif_bn">Noto Serif Bengali</option>
-    <option value="lohit_bn">Lohit Bengali</option>
-</select>
+                    <option value="noto_sans_bn">Noto Sans Bengali</option>
+                    <option value="kalpurush">Kalpurush</option>
+                    <option value="solaimanlipi">SolaimanLipi</option>
+                    <option value="noto_serif_bn">Noto Serif Bengali</option>
+                    <option value="lohit_bn">Lohit Bengali</option>
+                </select>
 
                 <select id="set-size" onchange="updatePreview()">
                     <option value="18">Small (18)</option>
                     <option value="24" selected>Medium (24)</option>
                     <option value="32">Large (32)</option>
+                    <option value="42">XL (42)</option>
+                    <option value="52">XXL (52)</option>
                 </select>
+
                 <select id="set-color" onchange="updatePreview()">
                     <option value="white">White</option>
                     <option value="yellow">Yellow</option>
                     <option value="cyan">Cyan</option>
                 </select>
+
                 <select id="set-bg" onchange="updatePreview()">
                     <option value="none">No Background</option>
                     <option value="semi">Semi-transparent</option>
                     <option value="black">Solid Black</option>
                 </select>
+
                 <select id="set-pos" onchange="updatePreview()">
                     <option value="bottom" selected>Bottom</option>
                     <option value="middle">Middle</option>
                     <option value="top">Top</option>
                 </select>
+
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <label><input type="checkbox" id="set-bold" onchange="updatePreview()" style="width:auto; margin:0"> Bold</label>
                     <label><input type="checkbox" id="set-italic" onchange="updatePreview()" style="width:auto; margin:0"> Italic</label>
                 </div>
             </div>
-            
+
             <h3 style="font-size: 1rem; margin: 15px 0 10px;">Live Preview</h3>
             <div class="preview-box">
                 <div class="preview-sub" id="preview-text">এটি একটি সাবটাইটেল প্রিভিউ।<br>This is a subtitle preview.</div>
@@ -196,12 +336,12 @@
                 <div class="step" id="step-burn">3. Processing</div>
                 <div class="step" id="step-up">4. Uploading</div>
             </div>
-            
+
             <div class="progress-container">
                 <div class="progress-bar" id="main-progress"></div>
                 <div class="progress-text" id="main-progress-text">0%</div>
             </div>
-            
+
             <div id="success-area" class="hidden">
                 <div class="success-banner">
                     🎉 Upload Complete!<br>
@@ -218,7 +358,7 @@
     <div class="floating-tasks hidden" id="task-manager-btn" onclick="toggleTaskManager()">
         Tasks <span class="badge active" id="task-count" style="background:#fff; margin-left:5px; color:#000">0</span>
     </div>
-    
+
     <div class="task-panel" id="task-panel">
         <h3 style="margin-bottom: 10px; border-bottom: 1px solid var(--glass-border); padding-bottom: 5px;">Running Tasks</h3>
         <div id="task-list"></div>
@@ -227,20 +367,20 @@
     <script>
         let currentSubPath = null;
         let transSubPath = null;
+        let currentCookiePath = null;
         let activeTasks = JSON.parse(localStorage.getItem('anisub_tasks') || '[]');
         let currentViewTaskId = null;
         let pollIntervals = {};
         let logOffsets = {};
         let lastLogTime = {};
-        
-        // Init
+
         window.onload = () => {
             updatePreview();
-            if(activeTasks.length > 0) {
+            if (activeTasks.length > 0) {
                 document.getElementById('task-manager-btn').classList.remove('hidden');
                 document.getElementById('task-count').innerText = activeTasks.length;
                 activeTasks.forEach(t => startPolling(t.id));
-                viewTask(activeTasks[0].id); // View first task
+                viewTask(activeTasks[0].id);
             }
         };
 
@@ -268,12 +408,20 @@
             const bold = document.getElementById('set-bold').checked;
             const italic = document.getElementById('set-italic').checked;
 
-            text.style.fontFamily = `"${font}", sans-serif`;
+            const fontMap = {
+                noto_sans_bn: 'Noto Sans Bengali',
+                noto_serif_bn: 'Noto Serif Bengali',
+                lohit_bn: 'Lohit Bengali',
+                kalpurush: 'Kalpurush',
+                solaimanlipi: 'SolaimanLipi'
+            };
+
+            text.style.fontFamily = `"${fontMap[font] || 'Noto Sans Bengali'}", sans-serif`;
             text.style.fontSize = `${size}px`;
-            
+
             const colorMap = { white: '#fff', yellow: '#FFD700', cyan: '#00FFFF' };
-            text.style.color = colorMap[color];
-            
+            text.style.color = colorMap[color] || '#fff';
+
             if (bg === 'none') {
                 text.style.backgroundColor = 'transparent';
                 text.style.textShadow = '2px 2px 4px rgba(0,0,0,0.8), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000';
@@ -293,9 +441,10 @@
 
             text.style.bottom = pos === 'bottom' ? '10%' : 'auto';
             text.style.top = pos === 'top' ? '10%' : 'auto';
-            
-            if(pos === 'middle') {
+
+            if (pos === 'middle') {
                 text.style.top = '50%';
+                text.style.bottom = 'auto';
                 text.style.transform = 'translateY(-50%)';
             } else {
                 text.style.transform = 'none';
@@ -306,87 +455,104 @@
             if (!input.files || input.files.length === 0) return;
             const file = input.files[0];
             document.getElementById('sub-file-name').innerText = `Selected: ${file.name}`;
-            
+
             const formData = new FormData();
-            formData.append('file', file);
-            
+            formData.append('subtitle_file', file);
+
             try {
-                const res = await fetch('/upload_sub', { method: 'POST', body: formData });
+                const res = await fetch('/upload_subtitle', { method: 'POST', body: formData });
                 const data = await res.json();
-                if(data.path) currentSubPath = data.path;
+                if (data.subtitle_path) {
+                    currentSubPath = data.subtitle_path;
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
             } catch (e) {
                 document.getElementById('sub-file-name').innerText = `Upload failed: ${e.message}`;
             }
         }
-        
+
         async function handleTransSubFile(input) {
             if (!input.files || input.files.length === 0) return;
             const file = input.files[0];
             document.getElementById('trans-sub-file-name').innerText = `Selected: ${file.name}`;
-            
+
             const formData = new FormData();
-            formData.append('file', file);
-            
+            formData.append('subtitle_file', file);
+
             try {
-                const res = await fetch('/upload_sub', { method: 'POST', body: formData });
+                const res = await fetch('/upload_subtitle', { method: 'POST', body: formData });
                 const data = await res.json();
-                if(data.path) transSubPath = data.path;
+                if (data.subtitle_path) {
+                    transSubPath = data.subtitle_path;
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
             } catch (e) {
                 document.getElementById('trans-sub-file-name').innerText = `Upload failed: ${e.message}`;
             }
         }
-        
+
         async function uploadCookie() {
             const input = document.getElementById('cookie-file');
-            if(!input.files.length) return;
+            if (!input.files.length) return;
+
             const formData = new FormData();
-            formData.append('file', input.files[0]);
+            formData.append('cookie_file', input.files[0]);
             document.getElementById('cookie-status').innerText = "Uploading...";
+
             try {
-                await fetch('/upload_cookie', { method: 'POST', body: formData });
-                document.getElementById('cookie-status').innerText = "✅ Cookies uploaded!";
-                document.getElementById('cookie-status').style.color = "var(--success)";
+                const res = await fetch('/upload_cookie', { method: 'POST', body: formData });
+                const data = await res.json();
+
+                if (data.cookie_path) {
+                    currentCookiePath = data.cookie_path;
+                    document.getElementById('cookie-status').innerText = "✅ Cookies uploaded!";
+                    document.getElementById('cookie-status').style.color = "var(--success)";
+                } else {
+                    throw new Error(data.error || 'Upload failed');
+                }
             } catch (e) {
                 document.getElementById('cookie-status').innerText = "❌ Upload failed";
             }
         }
 
         async function startExtraction() {
-            const url = document.getElementById('extract-url').value;
-            if(!url) return;
-            
+            const url = document.getElementById('extract-url').value.trim();
+            if (!url) return;
+
             const btn = document.getElementById('extract-btn');
             const log = document.getElementById('extract-log');
             btn.disabled = true;
             btn.innerText = "Extracting...";
             log.innerText = "Fetching page & bypassing CF...";
-            
+
             try {
                 const res = await fetch('/extract', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({url})
+                    body: JSON.stringify({ url, cookie_path: currentCookiePath })
                 });
                 const data = await res.json();
-                
-                if (data.m3u8_url) {
-                    document.getElementById('video-url').value = data.m3u8_url;
+
+                if (data.m3u8_url || data.video_url) {
+                    document.getElementById('video-url').value = data.m3u8_url || data.video_url;
                     document.getElementById('video-auto-badge').classList.add('active');
                     log.innerText = "✅ Extracted successfully!";
                 } else {
                     log.innerText = "❌ Video URL not found.";
                 }
-                
+
                 if (data.subtitles && data.subtitles.length > 0) {
                     let subUrl = data.subtitles[0].url;
                     const bnSub = data.subtitles.find(s => s.lang === 'bn');
                     if (bnSub) subUrl = bnSub.url;
-                    
+
                     document.getElementById('sub-url').value = subUrl;
                     document.getElementById('sub-auto-badge').classList.add('active');
                     switchTab('url');
                 }
-                
+
                 if (data.iframe_urls && data.iframe_urls.length > 0) {
                     document.getElementById('iframe-list').style.display = 'block';
                     document.getElementById('iframe-count').innerText = data.iframe_urls.length;
@@ -402,15 +568,14 @@
                         container.appendChild(div);
                     });
                 }
-                
             } catch (e) {
                 log.innerText = `❌ Error: ${e.message}`;
             }
-            
+
             btn.disabled = false;
             btn.innerText = "Auto Extract Video & Subtitles";
         }
-        
+
         function useIframe(url) {
             document.getElementById('iframe-url').value = url;
             document.getElementById('video-url').value = url;
@@ -418,33 +583,59 @@
         }
 
         async function startProcess() {
+            const sourceUrl = document.getElementById('extract-url').value.trim() || null;
+            const videoUrl = document.getElementById('video-url').value.trim() || null;
+
+            if (!sourceUrl && !videoUrl) {
+                alert("Episode URL বা Video URL দাও");
+                return;
+            }
+
+            const activeTabText = document.querySelector('.tab.active').innerText;
+            const isFileTab = activeTabText.includes('File');
+            const isUrlTab = activeTabText.includes('URL');
+            const isTranslateTab = activeTabText.includes('Translate');
+
+            let subtitleUrl = null;
+
+            if (isFileTab) {
+                subtitleUrl = currentSubPath;
+            } else if (isUrlTab) {
+                subtitleUrl = document.getElementById('sub-url').value.trim() || null;
+            } else if (isTranslateTab) {
+                subtitleUrl = transSubPath || document.getElementById('trans-sub-url').value.trim() || null;
+            }
+
             const payload = {
-                video_url: document.getElementById('video-url').value,
-                iframe_url: document.getElementById('iframe-url').value,
-                sub_type: document.querySelector('.tab.active').innerText.includes('File') ? 'file' : 
-                          document.querySelector('.tab.active').innerText.includes('URL') ? 'url' : 'translate',
-                sub_url: document.getElementById('sub-url').value,
-                sub_file_path: currentSubPath,
-                trans_engine: document.getElementById('trans-engine').value,
-                trans_lang: document.getElementById('trans-lang').value,
-                trans_sub_url: document.getElementById('trans-sub-url').value,
-                trans_sub_file: transSubPath,
-                gemini_api_key: document.getElementById('gemini-key').value,
-                font_name: document.getElementById('set-font').value,
-                font_size: document.getElementById('set-size').value,
-                color: document.getElementById('set-color').value,
-                bg: document.getElementById('set-bg').value,
-                position: document.getElementById('set-pos').value,
-                bold: document.getElementById('set-bold').checked,
-                italic: document.getElementById('set-italic').checked,
+                source_url: sourceUrl,
+                video_url: videoUrl,
+                iframe_url: document.getElementById('iframe-url').value.trim() || null,
+                subtitle_url: subtitleUrl,
+                cookie_path: currentCookiePath,
+
+                translate_to_bn: isTranslateTab,
+                gemini_api_key: document.getElementById('gemini-key').value.trim(),
+
+                font_family: document.getElementById('set-font').value,
+                subtitle_size: parseInt(document.getElementById('set-size').value) || 42,
+                subtitle_color: document.getElementById('set-color').value,
+                subtitle_background:
+                    document.getElementById('set-bg').value === 'semi' ? 'semi-transparent' :
+                    document.getElementById('set-bg').value === 'black' ? 'black box' : 'none',
+                subtitle_position: document.getElementById('set-pos').value,
+                subtitle_bold: document.getElementById('set-bold').checked,
+                subtitle_italic: document.getElementById('set-italic').checked,
+
                 tg_title: document.getElementById('tg-title').value,
                 tg_caption: document.getElementById('tg-caption').value,
+
+                upload_targets: ['telegram']
             };
-            
+
             const btn = document.getElementById('main-btn');
             btn.disabled = true;
             btn.innerText = "Starting...";
-            
+
             try {
                 const res = await fetch('/start', {
                     method: 'POST',
@@ -452,49 +643,51 @@
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-                
-                if(data.task_id) {
-                    const task = {id: data.task_id, title: payload.tg_title || 'Untitled Video'};
+
+                if (data.task_id) {
+                    const task = { id: data.task_id, title: payload.tg_title || 'Untitled Video' };
                     activeTasks.push(task);
                     saveTasks();
-                    
+
                     document.getElementById('task-manager-btn').classList.remove('hidden');
                     document.getElementById('task-count').innerText = activeTasks.length;
-                    
+
                     viewTask(data.task_id);
                     startPolling(data.task_id);
-                    
+
                     document.getElementById('tg-title').value = '';
+                } else {
+                    throw new Error(data.error || 'Failed to start task');
                 }
             } catch (e) {
                 alert("Failed to start: " + e.message);
             }
-            
+
             btn.disabled = false;
             btn.innerText = "🚀 Process and Upload to Telegram";
         }
-        
+
         function saveTasks() {
             localStorage.setItem('anisub_tasks', JSON.stringify(activeTasks));
             renderTaskList();
         }
-        
+
         function toggleTaskManager() {
             const panel = document.getElementById('task-panel');
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
             renderTaskList();
         }
-        
+
         function renderTaskList() {
             const container = document.getElementById('task-list');
             container.innerHTML = '';
-            
-            if(activeTasks.length === 0) {
+
+            if (activeTasks.length === 0) {
                 container.innerHTML = '<div style="color:var(--text-muted); text-align:center;">No active tasks</div>';
                 document.getElementById('task-manager-btn').classList.add('hidden');
                 return;
             }
-            
+
             activeTasks.forEach(t => {
                 const row = document.createElement('div');
                 row.className = 'task-row';
@@ -511,117 +704,132 @@
             currentViewTaskId = taskId;
             document.getElementById('progress-section').classList.remove('hidden');
             document.getElementById('success-area').classList.add('hidden');
-            
             document.getElementById('terminal-log').innerHTML = '';
+            document.getElementById('result-video').src = '';
             logOffsets[taskId] = 0;
             lastLogTime[taskId] = Date.now();
-            
             document.getElementById('task-panel').style.display = 'none';
         }
 
         function startPolling(taskId) {
-            if(pollIntervals[taskId]) return;
+            if (pollIntervals[taskId]) return;
             logOffsets[taskId] = 0;
             lastLogTime[taskId] = Date.now();
-            
+
             pollIntervals[taskId] = setInterval(async () => {
                 try {
                     const offset = logOffsets[taskId];
-                    const res = await fetch(`/status/${taskId}?offset=${offset}`);
+                    const res = await fetch(`/status/${taskId}?log_offset=${offset}`);
                     if (!res.ok) {
-                        if(res.status === 404) stopPolling(taskId, true);
+                        if (res.status === 404) stopPolling(taskId, true);
                         return;
                     }
+
                     const data = await res.json();
-                    
+
                     const miniBar = document.getElementById(`mini-prog-${taskId}`);
-                    if(miniBar) miniBar.style.width = `${data.progress}%`;
-                    
+                    if (miniBar) miniBar.style.width = `${data.progress}%`;
+
                     if (currentViewTaskId === taskId) {
                         updateUI(data);
-                        
+
                         const logBox = document.getElementById('terminal-log');
                         if (data.logs && data.logs.length > 0) {
-                            // remove 'still working' if present
-                            if(logBox.innerHTML.includes('Still working...')) {
+                            if (logBox.innerHTML.includes('Still working...')) {
                                 const last = logBox.lastElementChild;
-                                if(last && last.innerText.includes('Still working...')) last.remove();
+                                if (last && last.innerText.includes('Still working...')) last.remove();
                             }
-                            
-                            data.logs.forEach(line => {
+
+                            data.logs.forEach(entry => {
                                 const div = document.createElement('div');
                                 div.className = 'log-line';
-                                div.innerText = line;
+
+                                let lineText = '';
+                                if (typeof entry === 'string') {
+                                    lineText = entry;
+                                } else {
+                                    lineText = `${entry.icon || 'ℹ️'} ${entry.message || ''}`;
+                                }
+
+                                div.innerText = lineText;
                                 logBox.appendChild(div);
                             });
+
                             logOffsets[taskId] += data.logs.length;
                             logBox.scrollTop = logBox.scrollHeight;
                             lastLogTime[taskId] = Date.now();
                         } else if (data.status !== 'Done' && data.status !== 'Error') {
                             if (Date.now() - lastLogTime[taskId] > 20000) {
-                                // check if already has still working
-                                if(!logBox.innerHTML.includes('Still working...')) {
+                                if (!logBox.innerHTML.includes('Still working...')) {
                                     const div = document.createElement('div');
                                     div.className = 'log-line';
                                     div.style.color = 'var(--warn)';
-                                    div.innerText = `[${new Date().toLocaleTimeString()}] 🟡 Still working... [${data.status}]`;
+                                    div.innerText = `[${new Date().toLocaleTimeString()}] 🟡 Still working... [${data.stage || data.status}]`;
                                     logBox.appendChild(div);
                                     logBox.scrollTop = logBox.scrollHeight;
                                 }
                             }
                         }
                     }
-                    
+
                     if (data.status === 'Done' || data.status === 'Error') {
                         stopPolling(taskId);
                     }
-                    
                 } catch (e) {}
             }, 1000);
         }
-        
+
         function stopPolling(taskId, remove = false) {
             clearInterval(pollIntervals[taskId]);
             delete pollIntervals[taskId];
-            
-            if (remove || document.getElementById(`mini-prog-${taskId}`)?.parentElement.parentElement.innerText.includes('Error')) {
-                // leave it until user clears? The user instructions didn't specify. I'll just keep it.
+            if (remove) {
+                // keep task in list for now
             }
         }
-        
+
         function updateUI(data) {
             document.getElementById('main-progress').style.width = `${data.progress}%`;
             document.getElementById('main-progress-text').innerText = `${data.progress}%`;
-            
+
             const steps = ['dl', 'sub', 'burn', 'up'];
-            const statusMap = {'Downloading':0, 'Subtitle':1, 'Processing':2, 'Uploading':3, 'Done':4};
-            const currentIdx = statusMap[data.status] ?? -1;
-            
+            const stageMap = {
+                extract: 0,
+                download: 1,
+                translate: 1,
+                process: 2,
+                upload: 3,
+                done: 4
+            };
+
+            const currentIdx = stageMap[data.stage] ?? -1;
+
             steps.forEach((s, idx) => {
                 const el = document.getElementById(`step-${s}`);
                 el.className = 'step';
-                if (idx < currentIdx) el.classList.add('done');
-                else if (idx === currentIdx) {
+
+                if (idx < currentIdx) {
+                    el.classList.add('done');
+                } else if (idx === currentIdx && data.stage !== 'done' && data.stage !== 'error') {
                     el.classList.add('active');
                     el.classList.add('pulse');
                 }
             });
-            
-            if (data.status === 'Error') {
+
+            if (data.status === 'Error' || data.stage === 'error') {
                 const stepEls = document.querySelectorAll('.step.active');
                 stepEls.forEach(el => {
                     el.classList.remove('active', 'pulse');
                     el.classList.add('error');
                 });
             }
-            
-            if (data.status === 'Done') {
+
+            if (data.status === 'Done' || data.stage === 'done') {
                 document.getElementById('success-area').classList.remove('hidden');
-                if(data.tg_link) {
+                if (data.tg_link) {
                     document.getElementById('tg-post-link').href = data.tg_link;
                 }
-                if(data.has_preview) {
-                    document.getElementById('result-video').src = `/preview/${currentViewTaskId}`;
+                if (data.final_video_path) {
+                    document.getElementById('result-video').src = `/preview/${currentViewTaskId}?t=${Date.now()}`;
                 }
             }
         }
