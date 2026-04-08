@@ -55,16 +55,19 @@ FONT_CANDIDATES = {
         ],
     },
     'kalpurush': {
-    'display': 'Kalpurush',
-    'family': 'Kalpurush',
-    'paths': ['/app/fonts/Kalapurush.ttf'],
-},
-'solaimanlipi': {
-    'display': 'SolaimanLipi',
-    'family': 'SolaimanLipi',
-    'paths': ['/app/fonts/SolaimanLipi.ttf'],
-},
-
+        'display': 'Kalpurush',
+        'family': 'Kalpurush',
+        'paths': [
+            '/app/fonts/Kalapurush.ttf',
+        ],
+    },
+    'solaimanlipi': {
+        'display': 'SolaimanLipi',
+        'family': 'SolaimanLipi',
+        'paths': [
+            '/app/fonts/SolaimanLipi.ttf',
+        ],
+    },
 }
 
 
@@ -86,6 +89,14 @@ def ensure_fonts_dir():
 
 def get_font_family(font_key):
     return FONT_CANDIDATES.get(font_key, FONT_CANDIDATES['noto_sans_bn'])['family']
+
+
+def pick_first(data, *keys, default=None):
+    for key in keys:
+        value = data.get(key)
+        if value not in (None, '', []):
+            return value
+    return default
 
 
 def ass_color(name):
@@ -176,7 +187,6 @@ def download_text(url: str) -> str:
 
 
 def _parse_ffmpeg_time(line: str):
-    """ffmpeg stderr থেকে time= value সেকেন্ডে বের করো"""
     m = re.search(r'time=(\d+):(\d+):([\d.]+)', line)
     if not m:
         return None
@@ -184,7 +194,6 @@ def _parse_ffmpeg_time(line: str):
 
 
 def _get_duration(path_or_url: str):
-    """ffprobe দিয়ে duration বের করো"""
     try:
         result = subprocess.run(
             ['ffprobe', '-v', 'error', '-show_entries', 'format=duration',
@@ -197,10 +206,6 @@ def _get_duration(path_or_url: str):
 
 
 def run_ffmpeg_with_progress(cmd, task, duration=None, progress_start=50, progress_end=75):
-    """
-    ffmpeg কে Popen দিয়ে চালাও, stderr থেকে live progress parse করো।
-    UI হ্যাং হবে না কারণ background thread এ চলে।
-    """
     proc = subprocess.Popen(
         cmd,
         stderr=subprocess.PIPE,
@@ -214,11 +219,9 @@ def run_ffmpeg_with_progress(cmd, task, duration=None, progress_start=50, progre
         if not line:
             continue
 
-        # live log — শুধু গুরুত্বপূর্ণ লাইন
         if any(k in line for k in ('frame=', 'fps=', 'time=', 'speed=', 'Error', 'error')):
             task['logs'].append({'ts': time.time(), 'icon': '🎞️', 'message': line})
 
-        # progress calculate
         if duration and 'time=' in line:
             elapsed = _parse_ffmpeg_time(line)
             if elapsed is not None:
@@ -238,14 +241,13 @@ def process_task(task_id, data):
 
     try:
         log(task, 'Task started', '🚀')
-        source_url = data.get('source_url')
-        video_url = data.get('video_url')
-        subtitle_url = data.get('subtitle_url')
-        cookie_path = data.get('cookie_path')
+        source_url = pick_first(data, 'source_url')
+        video_url = pick_first(data, 'video_url', 'iframe_url')
+        subtitle_url = pick_first(data, 'subtitle_url', 'sub_url', 'sub_file_path')
+        cookie_path = pick_first(data, 'cookie_path')
 
-        # ── Extract (video_url সরাসরি দিলে extractor skip) ──────
+        # ── Extract ──────────────────────────────────────────────
         if video_url:
-            # Direct URL mode — extractor বাদ, সরাসরি ffmpeg এ যাবে
             log(task, f'Direct video: {video_url[:80]}...', '🔗')
         elif source_url:
             result = extract_sources(source_url, cookie_path=cookie_path)
@@ -261,9 +263,9 @@ def process_task(task_id, data):
         if not video_url:
             raise RuntimeError('No video URL found')
 
-        # ── Download subtitle (optional) ──────────────────────────
+        # ── Download subtitle (optional) ────────────────────────
         srt_text = None
-        ass_path_direct = None  # .ass file সরাসরি দিলে
+        ass_path_direct = None
         if subtitle_url:
             task['stage'] = 'download'
             task['progress'] = 10
@@ -275,7 +277,6 @@ def process_task(task_id, data):
                 subtitle_text = download_text(subtitle_url)
                 log(task, 'Subtitle downloaded', '⬇️')
 
-            # .ass file হলে সরাসরি use করো — convert দরকার নেই
             if subtitle_url.lower().endswith('.ass') or subtitle_text.lstrip().startswith('[Script Info]'):
                 ass_path_direct = str(work_dir / 'subtitle.ass')
                 Path(ass_path_direct).write_text(subtitle_text, encoding='utf-8')
@@ -292,12 +293,12 @@ def process_task(task_id, data):
         else:
             log(task, 'No subtitle — video only mode', 'ℹ️')
 
-        # ── Translate ─────────────────────────────────────────────
+        # ── Translate ────────────────────────────────────────────
         translated_srt = None
         if srt_text:
             task['stage'] = 'translate'
             task['progress'] = 30
-            translate_to_bn = bool(data.get('translate_to_bn', True))
+            translate_to_bn = bool(data.get('translate_to_bn', data.get('sub_type') == 'translate'))
             if translate_to_bn:
                 translated_srt = translate_srt_text(
                     srt_text,
@@ -314,36 +315,35 @@ def process_task(task_id, data):
             translated_srt_path.write_text(translated_srt, encoding='utf-8')
             task['translated_srt_path'] = str(translated_srt_path)
 
-        # ── ASS subtitle ──────────────────────────────────────────
+        # ── ASS subtitle ─────────────────────────────────────────
         task['stage'] = 'process'
         task['progress'] = 50
-        ass_path = ass_path_direct  # .ass সরাসরি দিলে এটাই use হবে
+        ass_path = ass_path_direct
         if translated_srt:
             ass_path = str(work_dir / 'subtitle.ass')
             srt_to_ass(
                 translated_srt, ass_path,
-                font_key=data.get('font_family', 'noto_sans_bn'),
-                color=data.get('subtitle_color', 'white'),
-                position=data.get('subtitle_position', 'bottom'),
-                background=data.get('subtitle_background', 'semi-transparent'),
-                bold=bool(data.get('subtitle_bold', False)),
-                italic=bool(data.get('subtitle_italic', False)),
-                font_size=int(data.get('subtitle_size', 42)),
+                font_key=pick_first(data, 'font_family', 'font_name', default='noto_sans_bn'),
+                color=pick_first(data, 'subtitle_color', 'color', default='white'),
+                position=pick_first(data, 'subtitle_position', 'position', default='bottom'),
+                background=pick_first(data, 'subtitle_background', 'bg', default='semi-transparent'),
+                bold=bool(pick_first(data, 'subtitle_bold', 'bold', default=False)),
+                italic=bool(pick_first(data, 'subtitle_italic', 'italic', default=False)),
+                font_size=int(pick_first(data, 'subtitle_size', 'font_size', default=42)),
             )
             log(task, 'ASS subtitle prepared', '🎨')
 
-        # ── Download video first (CDN 403 fix) ──────────────────
+        # ── Download video first ────────────────────────────────
         raw_video = str(work_dir / 'source.mp4')
         task['stage'] = 'download'
         task['progress'] = 40
         log(task, 'Downloading video...', '⬇️')
 
-        dl = subprocess.run(
+        subprocess.run(
             ['yt-dlp', '-o', raw_video, '--no-playlist', video_url],
             capture_output=True, text=True
         )
         if not os.path.exists(raw_video) or os.path.getsize(raw_video) < 1024:
-            # yt-dlp fail করলে ffmpeg দিয়ে try
             subprocess.run([
                 'ffmpeg', '-y',
                 '-user_agent', 'Mozilla/5.0',
@@ -355,7 +355,7 @@ def process_task(task_id, data):
 
         log(task, 'Video downloaded', '✅')
 
-        # ── ffmpeg render (live progress) ─────────────────────────
+        # ── ffmpeg render ───────────────────────────────────────
         final_video_path = str(work_dir / 'final.mp4')
         fonts_dir = ensure_fonts_dir()
 
@@ -378,7 +378,7 @@ def process_task(task_id, data):
         ]
 
         log(task, 'Rendering video...', '🎬')
-        duration = _get_duration(video_url)
+        duration = _get_duration(raw_video)
         returncode = run_ffmpeg_with_progress(cmd, task, duration=duration)
 
         if returncode != 0 or not os.path.exists(final_video_path):
@@ -389,9 +389,9 @@ def process_task(task_id, data):
         task['final_video_path'] = final_video_path
         task['ass_path'] = ass_path
 
-        # ── Upload ────────────────────────────────────────────────
+        # ── Upload ──────────────────────────────────────────────
         task['stage'] = 'upload'
-        upload_targets = data.get('upload_targets', [])
+        upload_targets = data.get('upload_targets') or ['telegram']
 
         if 'telegram' in upload_targets:
             log(task, 'Uploading to Telegram...', '☁️')
@@ -408,6 +408,7 @@ def process_task(task_id, data):
                 tg_prog,
             )
             task['tg_link'] = tg_link
+            task['post_link'] = tg_link
             log(task, f'Telegram done: {tg_link}', '✅')
 
         if 'facebook' in upload_targets:
@@ -445,8 +446,6 @@ def process_task(task_id, data):
         log(task, f'Error: {exc}', '❌')
 
 
-# ── Routes ────────────────────────────────────────────────────────
-
 @app.route('/')
 def index():
     return render_template('index.html', fonts=FONT_CANDIDATES)
@@ -479,19 +478,21 @@ def status_route(task_id):
     task = TASKS.get(task_id)
     if not task:
         return jsonify({'error': 'Task not found'}), 404
-    offset = int(request.args.get('log_offset', 0))
+
+    offset = int(request.args.get('log_offset', request.args.get('offset', 0)))
     return jsonify({
         'id': task['id'],
         'status': task['status'],
         'stage': task['stage'],
         'progress': task['progress'],
-        'logs': task['logs'][offset:],   # offset দিয়ে নতুন লগ মাত্র পাঠাচ্ছি
+        'logs': task['logs'][offset:],
         'log_total': len(task['logs']),
         'tg_link': task.get('tg_link'),
         'fb_link': task.get('fb_link'),
         'post_link': task.get('post_link'),
         'error': task.get('error'),
         'final_video_path': task.get('final_video_path'),
+        'has_preview': bool(task.get('final_video_path') and os.path.exists(task['final_video_path'])),
     })
 
 
