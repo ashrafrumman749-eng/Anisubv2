@@ -11,7 +11,7 @@ from pathlib import Path
 import requests
 from flask import Flask, Response, jsonify, render_template, request, send_file
 
-from extractor import extract_sources
+from extractor import extract_from_episode_page as extract_sources
 from fb_uploader import upload_to_facebook
 from translator import convert_vtt_to_srt, parse_srt, translate_srt_text
 from uploader import upload_to_telegram
