@@ -6,6 +6,7 @@
     <title>AniSub Uploader</title>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
     <style>
+        /* আপনার পুরনো স্টাইল এখানে অপরিবর্তিত থাকবে */
         :root {
             --bg: #0a0a1a;
             --glass: rgba(255,255,255,0.05);
@@ -209,7 +210,7 @@
 
         <div class="card" id="extraction-section">
             <h2>🔍 Auto Extract</h2>
-            <input type="url" id="extract-url" placeholder="Paste episode page URL here...">
+            <input type="url" id="extract-url" placeholder="Paste episode page URL or direct video link...">
             <button id="extract-btn" onclick="startExtraction()">Auto Extract Video & Subtitles</button>
             <div class="mini-log" id="extract-log"></div>
 
@@ -517,16 +518,31 @@
             }
         }
 
+        // 🔥 আপডেটেড startExtraction ফাংশন
         async function startExtraction() {
             const url = document.getElementById('extract-url').value.trim();
             if (!url) return;
 
             const btn = document.getElementById('extract-btn');
-            const log = document.getElementById('extract-log');
+            const logEl = document.getElementById('extract-log');
             btn.disabled = true;
-            btn.innerText = "Extracting...";
-            log.innerText = "Fetching page & bypassing CF...";
-
+            btn.innerText = "Processing...";
+            
+            // চেক করি এটি সরাসরি ভিডিও লিংক কিনা
+            const isDirectVideo = url.match(/\.(mp4|m3u8)(\?|$)/i);
+            
+            if (isDirectVideo) {
+                // সরাসরি ভিডিও লিংক: সোর্স বক্সে বসিয়ে দাও
+                document.getElementById('video-url').value = url;
+                document.getElementById('video-auto-badge').classList.add('active');
+                logEl.innerText = "✅ Direct video link set as source.";
+                btn.disabled = false;
+                btn.innerText = "Auto Extract Video & Subtitles";
+                return;
+            }
+            
+            // নাহলে এপিসোড লিংক – এক্সট্র্যাক্ট করো
+            logEl.innerText = "Extracting from episode page...";
             try {
                 const res = await fetch('/extract', {
                     method: 'POST',
@@ -538,9 +554,9 @@
                 if (data.m3u8_url || data.video_url) {
                     document.getElementById('video-url').value = data.m3u8_url || data.video_url;
                     document.getElementById('video-auto-badge').classList.add('active');
-                    log.innerText = "✅ Extracted successfully!";
+                    logEl.innerText = "✅ Extracted successfully!";
                 } else {
-                    log.innerText = "❌ Video URL not found.";
+                    logEl.innerText = "❌ Video URL not found. Try direct link.";
                 }
 
                 if (data.subtitles && data.subtitles.length > 0) {
@@ -569,7 +585,7 @@
                     });
                 }
             } catch (e) {
-                log.innerText = `❌ Error: ${e.message}`;
+                logEl.innerText = `❌ Error: ${e.message}`;
             }
 
             btn.disabled = false;
