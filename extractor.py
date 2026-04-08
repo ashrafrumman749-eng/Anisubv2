@@ -7,12 +7,9 @@ import shutil
 import subprocess
 import urllib.parse
 import os
+import requests
 
 def extract_from_episode_page(url, cookie_path=None):
-    scraper = cloudscraper.create_scraper(
-        browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
-    )
-    
     result = {
         'm3u8_url': None,
         'subtitles': [],
@@ -20,16 +17,38 @@ def extract_from_episode_page(url, cookie_path=None):
         'errors': []
     }
     
-    # সাইট স্পেসিফিক হ্যান্ডলিং
+    # ১. Dramacool / Watchasia সাইটের জন্য Consumet API (সবচেয়ে নির্ভরযোগ্য)
     if 'dramacool' in url.lower() or 'watchasia' in url.lower():
-        dramacool_result = extract_dramacool_direct(url, cookie_path)
-        if dramacool_result.get('m3u8_url'):
-            result['m3u8_url'] = dramacool_result['m3u8_url']
-            result['subtitles'].extend(dramacool_result.get('subtitles', []))
-            return result
-    elif 'movibox' in url.lower():
-        # movibox এর জন্য পরে যোগ করা যাবে
-        pass
+        # URL থেকে episode আইডি বের করো (যেমন: /episode/108612/...)
+        episode_match = re.search(r'/episode/(\d+)/', url)
+        if episode_match:
+            episode_id = episode_match.group(1)
+            try:
+                api_url = f"https://api.consumet.org/movies/dramacool/watch?episodeId={episode_id}"
+                resp = requests.get(api_url, timeout=15)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    sources = data.get('sources', [])
+                    for src in sources:
+                        if src.get('url') and '.m3u8' in src['url']:
+                            result['m3u8_url'] = src['url']
+                            break
+                    # সাবটাইটেল থাকলে নাও
+                    for sub in data.get('subtitles', []):
+                        if sub.get('url'):
+                            result['subtitles'].append({
+                                'url': sub['url'],
+                                'lang': sub.get('lang', 'en')
+                            })
+                    if result['m3u8_url']:
+                        return result
+            except Exception as e:
+                result['errors'].append(f"Consumet API error: {e}")
+    
+    # ২. পুরনো পদ্ধতি (cloudscraper + regex) – ব্যাকআপ
+    scraper = cloudscraper.create_scraper(
+        browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
+    )
     
     try:
         headers = {
@@ -45,7 +64,6 @@ def extract_from_episode_page(url, cookie_path=None):
             'Sec-Fetch-Site': 'none',
             'Cache-Control': 'max-age=0'
         }
-        
         res = scraper.get(url, timeout=20, headers=headers)
         res.raise_for_status()
         html = res.text
@@ -55,7 +73,7 @@ def extract_from_episode_page(url, cookie_path=None):
         
     soup = BeautifulSoup(html, 'lxml')
     
-    # আগের m3u8 প্যাটার্ন (যা ছিল)
+    # m3u8 প্যাটার্নস (বিস্তৃত)
     m3u8_patterns = [
         r'https?://[^"\'\s<>]+\.m3u8[^"\'\s<>]*',
         r'file["\']?\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
@@ -90,6 +108,7 @@ def extract_from_episode_page(url, cookie_path=None):
         r'quality[^}]*["\']?url["\']?\s*:\s*["\']([^"\']+\.m3u8[^"\']*)["\']',
     ]
     
+    # মেইন HTML এ খোঁজো
     for pattern in m3u8_patterns:
         matches = re.findall(pattern, html, re.IGNORECASE)
         for match in matches:
@@ -99,7 +118,7 @@ def extract_from_episode_page(url, cookie_path=None):
         if result['m3u8_url']:
             break
     
-    # baki অংশ আগের মতোই থাকবে (iframe, unpack, yt-dlp ইত্যাদি)
+    # আনপ্যাকড জাভাস্ক্রিপ্টে খোঁজো
     if not result['m3u8_url']:
         unpacked = unpack_js(html)
         if unpacked:
@@ -112,6 +131,7 @@ def extract_from_episode_page(url, cookie_path=None):
                 if result['m3u8_url']:
                     break
     
+    # স্ক্রিপ্ট ট্যাগে খোঁজো
     if not result['m3u8_url']:
         script_tags = soup.find_all('script')
         for script in script_tags:
@@ -127,6 +147,7 @@ def extract_from_episode_page(url, cookie_path=None):
                 if result['m3u8_url']:
                     break
     
+    # JSON ডাটা খোঁজো
     if not result['m3u8_url']:
         json_patterns = [
             r'var\s+\w+\s*=\s*(\{[^;]*"(?:file|src|url|video|stream)"[^}]*\})',
@@ -149,8 +170,10 @@ def extract_from_episode_page(url, cookie_path=None):
             if result['m3u8_url']:
                 break
     
+    # সাবটাইটেল এক্সট্র্যাক্ট
     result['subtitles'].extend(extract_subtitles(html))
     
+    # আইফ্রেম খোঁজো
     iframes = soup.find_all('iframe')
     for iframe in iframes:
         src = iframe.get('src') or iframe.get('data-src') or iframe.get('data-lazy-src')
@@ -173,12 +196,14 @@ def extract_from_episode_page(url, cookie_path=None):
         if src.startswith('http') and src not in result['iframe_urls']:
             result['iframe_urls'].append(src)
     
+    # আইফ্রেমের ভিতরে খোঁজো
     if not result['m3u8_url'] and result['iframe_urls']:
         for iframe_url in result['iframe_urls']:
             try:
                 if_res = scraper.get(iframe_url, timeout=15, headers=headers)
                 if_html = if_res.text
                 
+                # বেস৬৪ ডিকোড চেষ্টা
                 b64_patterns = [
                     r'atob\([\'"]([^(\'"]+)[\'"]\)',
                     r'base64["\']?\s*:\s*["\']([A-Za-z0-9+/=]+)["\']',
@@ -202,6 +227,7 @@ def extract_from_episode_page(url, cookie_path=None):
                     if result['m3u8_url']:
                         break
                 
+                # সরাসরি প্যাটার্ন ম্যাচ
                 if not result['m3u8_url']:
                     for pattern in m3u8_patterns:
                         matches = re.findall(pattern, if_html, re.IGNORECASE)
@@ -212,6 +238,7 @@ def extract_from_episode_page(url, cookie_path=None):
                         if result['m3u8_url']:
                             break
                 
+                # আনপ্যাকড জেএস
                 if not result['m3u8_url']:
                     unpacked = unpack_js(if_html)
                     if unpacked:
@@ -225,13 +252,12 @@ def extract_from_episode_page(url, cookie_path=None):
                                 break
                 
                 result['subtitles'].extend(extract_subtitles(if_html))
-                
                 if result['m3u8_url']:
                     break
-                    
             except Exception as e:
                 result['errors'].append(f"Iframe fetch failed ({iframe_url}): {e}")
     
+    # yt-dlp ফলব্যাক
     if not result['m3u8_url']:
         if shutil.which('yt-dlp') is not None:
             cmd = ['yt-dlp', '--dump-json', '--no-download', url]
@@ -261,6 +287,7 @@ def extract_from_episode_page(url, cookie_path=None):
             except Exception as e:
                 result['errors'].append(f"yt-dlp fallback failed: {e}")
     
+    # ডুপ্লিকেট সাবটাইটেল রিমুভ
     seen = set()
     unique_subs = []
     for s in result['subtitles']:
@@ -271,45 +298,6 @@ def extract_from_episode_page(url, cookie_path=None):
     
     return result
 
-def extract_dramacool_direct(url, cookie_path=None):
-    """Dramacool.bg সাইটের জন্য স্পেশাল ফাংশন"""
-    result = {'m3u8_url': None, 'subtitles': []}
-    
-    try:
-        scraper = cloudscraper.create_scraper(
-            browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
-        )
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'https://dramacool.bg/'
-        }
-        res = scraper.get(url, headers=headers, timeout=20)
-        html = res.text
-    except Exception as e:
-        return result
-    
-    # খুঁজে বের করো "player_ads" বা "player" সোর্স
-    # অনেক dramacool mirror এ video source এই প্যাটার্নে থাকে
-    player_match = re.search(r'sources:\s*\[\{file:\s*"([^"]+)"', html)
-    if player_match:
-        result['m3u8_url'] = player_match.group(1)
-        return result
-    
-    # অথবা iframe এর মধ্যে search
-    iframe_match = re.search(r'<iframe[^>]+src="([^"]+)"', html)
-    if iframe_match:
-        iframe_url = iframe_match.group(1)
-        try:
-            if_res = scraper.get(iframe_url, headers=headers, timeout=15)
-            if_html = if_res.text
-            src_match = re.search(r'sources:\s*\[\{file:\s*"([^"]+)"', if_html)
-            if src_match:
-                result['m3u8_url'] = src_match.group(1)
-                return result
-        except:
-            pass
-    
-    return result
 
 def is_valid_m3u8(url):
     if not url or not isinstance(url, str):
@@ -327,6 +315,7 @@ def is_valid_m3u8(url):
         return False
     return True
 
+
 def unpack_js(html):
     patterns = [
         r'eval\((function\(p,a,c,k,e,?[rd]?\).*?)\)',
@@ -338,6 +327,7 @@ def unpack_js(html):
         if match:
             return match.group(1)
     return ""
+
 
 def extract_subtitles(html):
     subs = []
@@ -359,10 +349,12 @@ def extract_subtitles(html):
                     subs.append({'url': src, 'lang': detect_lang(src, track.get('srclang', ''))})
     except:
         pass
+    
     for p in patterns:
         for match in re.findall(p, html, re.IGNORECASE):
             if match.startswith('http') and {'url': match, 'lang': detect_lang(match, '')} not in subs:
                 subs.append({'url': match, 'lang': detect_lang(match, '')})
+    
     json_patterns = [
         r'["\']?subtitles?["\']?\s*:\s*(\[[^\]]+\])',
         r'["\']?tracks?["\']?\s*:\s*(\[[^\]]+\])',
@@ -382,6 +374,7 @@ def extract_subtitles(html):
             except:
                 pass
     return subs
+
 
 def detect_lang(url, srclang):
     s = f"{url} {srclang}".lower()
