@@ -9,6 +9,7 @@ import uuid
 from pathlib import Path
 
 import requests
+import cloudscraper
 from flask import Flask, Response, jsonify, render_template, request, send_file
 try:
     from extractor import extract_sources
@@ -256,7 +257,7 @@ def process_task(task_id, data):
         subtitle_url = pick_first(data, 'subtitle_url', 'sub_url', 'sub_file_path')
         cookie_path = pick_first(data, 'cookie_path')
 
-        # ── Extract ──────────────────────────────────────────────
+        # Extract
         if video_url:
             log(task, f'Direct video: {video_url[:80]}...', '🔗')
         elif source_url:
@@ -273,20 +274,18 @@ def process_task(task_id, data):
         if not video_url:
             raise RuntimeError('No video URL found')
 
-        # ── Download subtitle (optional) ────────────────────────
+        # Subtitle download & translation
         srt_text = None
         ass_path_direct = None
         if subtitle_url:
             task['stage'] = 'download'
             task['progress'] = 10
-
             if subtitle_url.startswith('/'):
                 subtitle_text = open(subtitle_url, encoding='utf-8').read()
                 log(task, 'Subtitle loaded from uploaded file', '📂')
             else:
                 subtitle_text = download_text(subtitle_url)
                 log(task, 'Subtitle downloaded', '⬇️')
-
             if subtitle_url.lower().endswith('.ass') or subtitle_text.lstrip().startswith('[Script Info]'):
                 ass_path_direct = str(work_dir / 'subtitle.ass')
                 Path(ass_path_direct).write_text(subtitle_text, encoding='utf-8')
@@ -296,14 +295,13 @@ def process_task(task_id, data):
                 log(task, 'VTT → SRT converted', '🔁')
             else:
                 srt_text = subtitle_text
-
             if srt_text:
                 original_srt_path = work_dir / 'original.srt'
                 original_srt_path.write_text(srt_text, encoding='utf-8')
         else:
             log(task, 'No subtitle — video only mode', 'ℹ️')
 
-        # ── Translate ────────────────────────────────────────────
+        # Translate
         translated_srt = None
         if srt_text:
             task['stage'] = 'translate'
@@ -320,12 +318,11 @@ def process_task(task_id, data):
             else:
                 translated_srt = srt_text
                 log(task, 'Translation skipped', '⏭️')
-
             translated_srt_path = work_dir / 'translated.srt'
             translated_srt_path.write_text(translated_srt, encoding='utf-8')
             task['translated_srt_path'] = str(translated_srt_path)
 
-        # ── ASS subtitle ─────────────────────────────────────────
+        # ASS subtitle
         task['stage'] = 'process'
         task['progress'] = 50
         ass_path = ass_path_direct
@@ -343,73 +340,40 @@ def process_task(task_id, data):
             )
             log(task, 'ASS subtitle prepared', '🎨')
 
-        # ── Download video using N_m3u8DL-RE (with referer) ─────
-        # ── Download video using N_m3u8DL-RE (with referer) ─────
-raw_video = str(work_dir / 'source.mp4')
-task['stage'] = 'download'
-task['progress'] = 40
-log(task, 'Downloading video...', '⬇️')
+        # ---------- VIDEO DOWNLOAD (cloudscraper + yt-dlp fallback) ----------
+        raw_video = str(work_dir / 'source.mp4')
+        task['stage'] = 'download'
+        task['progress'] = 40
+        log(task, 'Downloading video...', '⬇️')
 
-# N_m3u8DL-RE পাথ ঠিক করা
-n_m3u8dl_re_path = shutil.which('N_m3u8DL-RE')
-if not n_m3u8dl_re_path:
-    # লোকাল পাথে চেক
-    for p in ['./N_m3u8DL-RE', '/usr/local/bin/N_m3u8DL-RE']:
-        if os.path.exists(p):
-            n_m3u8dl_re_path = p
-            break
+        referer = data.get('source_url') or video_url
+        success = False
 
-referer = data.get('source_url') or video_url
-
-if n_m3u8dl_re_path:
-    cmd = [
-        n_m3u8dl_re_path, video_url,
-        '-sv', 'best',
-        '-mt',
-        '-M', 'format=mp4',
-        '-o', str(work_dir),
-        '-H', f'Referer:{referer}',
-        '-H', f'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-    ]
-    log(task, f'Using N_m3u8DL-RE from {n_m3u8dl_re_path}', '📥')
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode == 0:
-        downloaded_file = work_dir / 'source.mp4'
-        if downloaded_file.exists() and downloaded_file.stat().st_size > 1024:
-            raw_video = str(downloaded_file)
-            log(task, 'Video downloaded via N_m3u8DL-RE', '✅')
-        else:
-            raise RuntimeError('N_m3u8DL-RE output missing')
-    else:
-        log(task, f'N_m3u8DL-RE stderr: {proc.stderr[:200]}', '⚠️')
-        raise RuntimeError(f'N_m3u8DL-RE failed with code {proc.returncode}')
-else:
-    # Fallback: requests with FULL headers (including cookies)
-    log(task, 'N_m3u8DL-RE not found, using requests with retry...', '⚠️')
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Referer': referer,
-        'Origin': referer.split('/')[0] + '//' + referer.split('/')[2] if referer else '',
-        'Accept': '*/*',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Connection': 'keep-alive'
-    }
-    session = requests.Session()
-    if cookie_path and os.path.exists(cookie_path):
+        # 1) cloudscraper (bypass Cloudflare)
         try:
-            import http.cookiejar as cookielib
-            cj = cookielib.MozillaCookieJar(cookie_path)
-            cj.load()
-            session.cookies = cj
-            log(task, 'Cookies loaded', '🍪')
-        except Exception as e:
-            log(task, f'Cookie load failed: {e}', '⚠️')
-    
-    # রিট্রাই মেকানিজম
-    max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            resp = session.get(video_url, headers=headers, stream=True, timeout=60)
+            scraper = cloudscraper.create_scraper(
+                browser={'browser': 'chrome', 'platform': 'windows', 'mobile': False}
+            )
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': referer,
+                'Origin': referer.split('/')[0] + '//' + referer.split('/')[2] if referer else '',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Connection': 'keep-alive'
+            }
+            # কুকি ফাইল থাকলে লোড করার চেষ্টা (cloudscraper সাপোর্ট করে)
+            if cookie_path and os.path.exists(cookie_path):
+                # cloudscraper সরাসরি cookies.txt পার্স করতে পারে না, তাই একে session-এ লোড করব
+                try:
+                    import http.cookiejar as cookielib
+                    cj = cookielib.MozillaCookieJar(cookie_path)
+                    cj.load()
+                    scraper.cookies = cj
+                    log(task, 'Cookies loaded for cloudscraper', '🍪')
+                except Exception as e:
+                    log(task, f'Failed to load cookies: {e}', '⚠️')
+            resp = scraper.get(video_url, headers=headers, stream=True, timeout=90)
             resp.raise_for_status()
             total = int(resp.headers.get('content-length', 0))
             down = 0
@@ -421,66 +385,38 @@ else:
                         if total:
                             task['progress'] = 40 + int(35 * down / total)
             if os.path.getsize(raw_video) > 1024:
-                log(task, 'Video downloaded via requests', '✅')
-                break
+                success = True
+                log(task, 'Video downloaded via cloudscraper', '✅')
             else:
-                raise Exception('File too small')
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 403 and attempt < max_retries-1:
-                log(task, f'403 error, retrying with delay {attempt+1}...', '🔄')
-                time.sleep(2)
-            else:
-                raise
+                raise Exception('Downloaded file too small')
         except Exception as e:
-            if attempt == max_retries-1:
-                raise
-            time.sleep(2)
+            log(task, f'cloudscraper failed: {e}', '⚠️')
 
-        # Check if N_m3u8DL-RE binary exists (from railway predeploy)
-        n_m3u8dl_re_path = Path('./N_m3u8DL-RE')
-        if not n_m3u8dl_re_path.exists():
-            n_m3u8dl_re_path = Path('N_m3u8DL-RE')
-        
-        referer = data.get('source_url') or video_url
-        
-        if n_m3u8dl_re_path.exists():
-            cmd = [
-                str(n_m3u8dl_re_path), video_url,
-                '-sv', 'best',
-                '-mt',
-                '-M', 'format=mp4',
-                '-o', str(work_dir),
-                '-H', f'Referer:{referer}'
+        # 2) yt-dlp (with cookies and headers)
+        if not success:
+            log(task, 'Trying yt-dlp with headers and cookies...', '🔄')
+            yt_cmd = [
+                'yt-dlp', '-o', raw_video, '--no-playlist',
+                '--add-header', f'Referer:{referer}',
+                '--add-header', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             ]
-            log(task, 'Using N_m3u8DL-RE for download...', '📥')
-            proc = subprocess.run(cmd, capture_output=True, text=True)
-            if proc.returncode == 0:
-                # N_m3u8DL-RE saves as source.mp4 in work_dir
-                downloaded_file = work_dir / 'source.mp4'
-                if downloaded_file.exists() and downloaded_file.stat().st_size > 1024:
-                    raw_video = str(downloaded_file)
-                    log(task, 'Video downloaded via N_m3u8DL-RE', '✅')
+            if cookie_path and os.path.exists(cookie_path):
+                yt_cmd.extend(['--cookies', cookie_path])
+            yt_cmd.append(video_url)
+            try:
+                subprocess.run(yt_cmd, check=True, capture_output=True, text=True)
+                if os.path.exists(raw_video) and os.path.getsize(raw_video) > 1024:
+                    success = True
+                    log(task, 'Video downloaded via yt-dlp', '✅')
                 else:
-                    raise RuntimeError('N_m3u8DL-RE output file missing or too small')
-            else:
-                raise RuntimeError(f'N_m3u8DL-RE failed: {proc.stderr}')
-        else:
-            # Fallback: requests with headers
-            log(task, 'N_m3u8DL-RE not found, using requests fallback...', '⚠️')
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-                'Referer': referer
-            }
-            resp = requests.get(video_url, headers=headers, stream=True, timeout=60)
-            resp.raise_for_status()
-            with open(raw_video, 'wb') as f:
-                for chunk in resp.iter_content(chunk_size=8192):
-                    f.write(chunk)
-            if os.path.getsize(raw_video) < 1024:
-                raise RuntimeError('Downloaded file too small (requests fallback)')
-            log(task, 'Video downloaded via requests', '✅')
+                    raise Exception('yt-dlp output missing or too small')
+            except Exception as e:
+                log(task, f'yt-dlp failed: {e}', '❌')
 
-        # ── ffmpeg render ───────────────────────────────────────
+        if not success:
+            raise RuntimeError('Video download failed after all attempts')
+
+        # ---------- ffmpeg render ----------
         final_video_path = str(work_dir / 'final.mp4')
         fonts_dir = ensure_fonts_dir()
 
@@ -514,18 +450,16 @@ else:
         task['final_video_path'] = final_video_path
         task['ass_path'] = ass_path
 
-        # ── Upload ──────────────────────────────────────────────
+        # ---------- Upload ----------
         task['stage'] = 'upload'
         upload_targets = data.get('upload_targets') or ['telegram']
 
         if 'telegram' in upload_targets:
             log(task, 'Uploading to Telegram...', '☁️')
-
             def tg_prog(pct):
                 task['progress'] = 75 + int(pct * 0.15)
                 if pct % 20 == 0:
                     log(task, f'Telegram upload: {pct}%', '📤')
-
             tg_link = upload_to_telegram(
                 final_video_path,
                 data.get('tg_title', 'AniSub Video'),
@@ -543,12 +477,10 @@ else:
                 log(task, 'Facebook credentials missing, skipping', '⚠️')
             else:
                 log(task, 'Uploading to Facebook...', '📘')
-
                 def fb_prog(pct):
                     task['progress'] = 90 + int(pct * 0.10)
                     if pct % 20 == 0:
                         log(task, f'Facebook upload: {pct}%', '📤')
-
                 fb_link = upload_to_facebook(
                     final_video_path,
                     data.get('tg_title', 'AniSub Video'),
@@ -603,7 +535,6 @@ def status_route(task_id):
     task = TASKS.get(task_id)
     if not task:
         return jsonify({'error': 'Task not found'}), 404
-
     offset = int(request.args.get('log_offset', request.args.get('offset', 0)))
     return jsonify({
         'id': task['id'],
