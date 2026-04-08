@@ -1,6 +1,12 @@
 FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y \
+ # N_m3u8DL-RE ডাউনলোড ও এক্সিকিউটেবল বানাও
+RUN wget -q https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.5.0-beta/N_m3u8DL-RE_Linux-x64_20250325.tar.gz && \
+    tar -xzf N_m3u8DL-RE_Linux-x64_20250325.tar.gz && \
+    chmod +x N_m3u8DL-RE && \
+    mv N_m3u8DL-RE /usr/local/bin/ && \
+    rm N_m3u8DL-RE_Linux-x64_20250325.tar.gz
     ffmpeg \
     fontconfig \
     wget \
