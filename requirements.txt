@@ -1,4 +1,3 @@
-cloudscraper
 flask
 gunicorn
 requests
@@ -11,4 +10,3 @@ google-generativeai
 lxml
 yt-dlp
 ffmpeg-python
-dramacool
