@@ -10,3 +10,4 @@ google-generativeai
 lxml
 yt-dlp
 ffmpeg-python
+dramacool
