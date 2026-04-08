@@ -1,8 +1,5 @@
 {
   "build": {
-    "commands": {
-      "predeploy": "wget https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.5.0-beta/N_m3u8DL-RE_Linux-x64_20250325.tar.gz && tar -xzf N_m3u8DL-RE_Linux-x64_20250325.tar.gz && chmod +x N_m3u8DL-RE"
-    },
     "builder": "DOCKERFILE"
   },
   "deploy": {
