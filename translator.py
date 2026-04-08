@@ -46,8 +46,39 @@ def convert_vtt_to_srt(vtt_content):
     return '\n'.join(result)
 
 
+def parse_srt(srt_text):
+    """
+    Parse SRT text into a list of dicts with 'times' and 'text'.
+    This matches the format expected by app.py's srt_to_ass().
+    """
+    blocks = re.split(r'\n\s*\n', srt_text.strip())
+    entries = []
+    for block in blocks:
+        lines = block.strip().splitlines()
+        if len(lines) >= 3:
+            # First line is index (skip), second line is timestamp, rest is text
+            timestamp_line = lines[1].strip() if len(lines) > 1 else ''
+            text_lines = lines[2:] if len(lines) > 2 else []
+            # Some SRT may have index, timestamp, then text possibly multiline
+            # Also handle case where first line might be timestamp if index missing?
+            # Safer: find line containing '-->'
+            time_line = None
+            text_parts = []
+            for line in lines:
+                if '-->' in line:
+                    time_line = line.strip()
+                elif not re.match(r'^\d+$', line.strip()):  # not an index number
+                    text_parts.append(line.strip())
+            if time_line and text_parts:
+                entries.append({
+                    'times': time_line,
+                    'text': '\n'.join(text_parts)
+                })
+    return entries
+
+
 def parse_srt_blocks(srt_content):
-    """Parse SRT into list of (index, timestamp, text) tuples"""
+    """Legacy: parse SRT into list of (index, timestamp, text) tuples"""
     blocks = re.split(r'\n\s*\n', srt_content.strip())
     parsed = []
     for block in blocks:
@@ -140,3 +171,18 @@ Keep the numbering. Do not add explanations.
     except Exception as e:
         # Fallback to Google Translate
         return translate_google(srt_content, dest_lang)
+
+
+def translate_srt_text(srt_text, gemini_api_key=None, grok_api_key=None, batch_size=20):
+    """
+    Main translation function expected by app.py.
+    Translates SRT text to Bengali using Gemini if API key provided,
+    otherwise falls back to Google Translate.
+    (grok_api_key is currently ignored but kept for compatibility)
+    """
+    dest_lang = 'bn'
+    if gemini_api_key:
+        return translate_gemini(srt_text, gemini_api_key, dest_lang)
+    else:
+        # Use Google Translate as default
+        return translate_google(srt_text, dest_lang)
