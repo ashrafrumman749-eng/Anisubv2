@@ -11,13 +11,6 @@ RUN apt-get update && apt-get install -y \
     fonts-lohit-beng-bengali \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# N_m3u8DL-RE ডাউনলোড ও ইনস্টল
-RUN wget -q https://github.com/nilaoda/N_m3u8DL-RE/releases/download/v0.5.0-beta/N_m3u8DL-RE_Linux-x64_20250325.tar.gz && \
-    tar -xzf N_m3u8DL-RE_Linux-x64_20250325.tar.gz && \
-    chmod +x N_m3u8DL-RE && \
-    mv N_m3u8DL-RE /usr/local/bin/ && \
-    rm N_m3u8DL-RE_Linux-x64_20250325.tar.gz
-
 # yt-dlp (ব্যাকআপ)
 RUN wget -q https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -O /usr/local/bin/yt-dlp && chmod +x /usr/local/bin/yt-dlp
 
