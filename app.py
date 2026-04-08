@@ -343,27 +343,55 @@ def process_task(task_id, data):
             )
             log(task, 'ASS subtitle prepared', '🎨')
 
-        # ── Download video first ────────────────────────────────
+        # ── Download video using N_m3u8DL-RE (with referer) ─────
         raw_video = str(work_dir / 'source.mp4')
         task['stage'] = 'download'
         task['progress'] = 40
         log(task, 'Downloading video...', '⬇️')
 
-        subprocess.run(
-            ['yt-dlp', '-o', raw_video, '--no-playlist', video_url],
-            capture_output=True, text=True
-        )
-        if not os.path.exists(raw_video) or os.path.getsize(raw_video) < 1024:
-            subprocess.run([
-                'ffmpeg', '-y',
-                '-user_agent', 'Mozilla/5.0',
-                '-i', video_url, '-c', 'copy', raw_video
-            ], capture_output=True)
-
-        if not os.path.exists(raw_video) or os.path.getsize(raw_video) < 1024:
-            raise RuntimeError('Video download failed')
-
-        log(task, 'Video downloaded', '✅')
+        # Check if N_m3u8DL-RE binary exists (from railway predeploy)
+        n_m3u8dl_re_path = Path('./N_m3u8DL-RE')
+        if not n_m3u8dl_re_path.exists():
+            n_m3u8dl_re_path = Path('N_m3u8DL-RE')
+        
+        referer = data.get('source_url') or video_url
+        
+        if n_m3u8dl_re_path.exists():
+            cmd = [
+                str(n_m3u8dl_re_path), video_url,
+                '-sv', 'best',
+                '-mt',
+                '-M', 'format=mp4',
+                '-o', str(work_dir),
+                '-H', f'Referer:{referer}'
+            ]
+            log(task, 'Using N_m3u8DL-RE for download...', '📥')
+            proc = subprocess.run(cmd, capture_output=True, text=True)
+            if proc.returncode == 0:
+                # N_m3u8DL-RE saves as source.mp4 in work_dir
+                downloaded_file = work_dir / 'source.mp4'
+                if downloaded_file.exists() and downloaded_file.stat().st_size > 1024:
+                    raw_video = str(downloaded_file)
+                    log(task, 'Video downloaded via N_m3u8DL-RE', '✅')
+                else:
+                    raise RuntimeError('N_m3u8DL-RE output file missing or too small')
+            else:
+                raise RuntimeError(f'N_m3u8DL-RE failed: {proc.stderr}')
+        else:
+            # Fallback: requests with headers
+            log(task, 'N_m3u8DL-RE not found, using requests fallback...', '⚠️')
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Referer': referer
+            }
+            resp = requests.get(video_url, headers=headers, stream=True, timeout=60)
+            resp.raise_for_status()
+            with open(raw_video, 'wb') as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    f.write(chunk)
+            if os.path.getsize(raw_video) < 1024:
+                raise RuntimeError('Downloaded file too small (requests fallback)')
+            log(task, 'Video downloaded via requests', '✅')
 
         # ── ffmpeg render ───────────────────────────────────────
         final_video_path = str(work_dir / 'final.mp4')
